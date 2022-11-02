@@ -24,8 +24,8 @@ const Player = (Who) => ({
     console.log(`${Who} played ${HAND[hand]}`);
     return hand;
   },
-  getGuess: ()=>{
-    const guess = Math.floor(Math.random() * 11);
+  getGuess: (played)=>{
+    const guess = HAND[played] + Math.floor(Math.random() * 6);
     console.log(`${Who} guessed ${GUESS[guess]}`);
     return guess;
   },
