@@ -32,6 +32,7 @@ const Player = {
   getHand: Fun([], UInt),
   getGuess: Fun([UInt], UInt),
   seeOutcome: Fun([UInt], Null),
+  informTimeout: Fun([], Null)
 
 };
 
@@ -39,12 +40,21 @@ export const main = Reach.App(() => {
   const Alice = Participant('Alice', {
     ...Player,
     wager: UInt,
+    deadline: UInt, // time delta (in blocks)
   });
   const Bob   = Participant('Bob', {
     ...Player,
     acceptWager: Fun([UInt], Null),
   });
   init();
+
+  const informTimeout = () => {
+    // we use each instead of two only blocks
+    // happens in local step
+    each([Alice, Bob], () =>{
+      interact.informTimeout();
+    })
+  };
 
   Alice.only(() => {
     const amount = declassify(interact.wager);
@@ -56,8 +66,10 @@ export const main = Reach.App(() => {
     const _guessAlice = interact.getGuess(_handAlice);
     const [_commitAliceGuess, _saltAliceGuess] = makeCommitment(interact, _guessAlice);
     const commitAliceGuess = declassify(_commitAliceGuess);
+
+    const deadline = declassify(interact.deadline);
   });
-  Alice.publish(commitAlice, commitAliceGuess, amount)
+  Alice.publish(commitAlice, commitAliceGuess, amount, deadline)
     .pay(amount);
   commit();
 
@@ -70,7 +82,8 @@ export const main = Reach.App(() => {
     // const handBob = (handAlice + 1) % 3;
   });
   Bob.publish(handBob, guessBob)
-    .pay(amount);
+    .pay(amount)
+    .timeout(relativeTime(deadline), () => closeTo(Alice, informTimeout));
 
   commit();
 
@@ -81,7 +94,8 @@ export const main = Reach.App(() => {
     const saltAliceGuess = declassify(_saltAliceGuess);
     const guessAlice = declassify(_guessAlice);
   });
-  Alice.publish(saltAlice, handAlice, saltAliceGuess, guessAlice);
+  Alice.publish(saltAlice, handAlice, saltAliceGuess, guessAlice)
+  .timeout(relativeTime(deadline), () => closeTo(Bob, informTimeout));
 
   // guarantee that these peices of information have not been changed
   checkCommitment(commitAlice, saltAlice, handAlice);

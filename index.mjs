@@ -1,6 +1,7 @@
 import { loadStdlib } from '@reach-sh/stdlib';
 import * as backend from './build/index.main.mjs';
-const stdlib = loadStdlib(process.env);
+const stdlib = loadStdlib({REACH_NO_WARN: 'Y'});
+// const stdlib = loadStdlib(process.env);
 
 const startingBalance = stdlib.parseCurrency(100);
 const accAlice = await stdlib.newTestAccount(startingBalance);
@@ -32,17 +33,28 @@ const Player = (Who) => ({
   seeOutcome: (outcome) => {
     console.log(`${Who} saw outcome ${OUTCOME[outcome]}`);
   },
+  informTimeout: () => {
+    console.log(`${Who} observed a timeout`);
+  },
 });
 
 await Promise.all([
   ctcAlice.p.Alice({
     ...Player('Alice'),
     wager: stdlib.parseCurrency(5),
+    deadline: 10,
   }),
   ctcBob.p.Bob({
     ...Player('Bob'),
-    acceptWager: (amt) => {
-      console.log(`Bob accepts the wager of ${fmt(amt)}.`);
+    acceptWager: async (amt) => {
+      if(Math.random() <= 0.5){
+        for(let i = 0; i <= 10; i++){
+          console.log('Bob takes his sweet time...');
+          await stdlib.wait(1);
+        }
+      } else {
+        console.log(`Bob accepts the wager of ${fmt(amt)}.`);
+      }
     },
   }),
 ]);
