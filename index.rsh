@@ -6,42 +6,31 @@ const [isOutcome, B_WINS, DRAW, A_WINS] = makeEnum(3);
 
 // const winner = (handAlice, handBob)=>((handAlice+(4-handBob))%3);
 const winner = (handAlice, handBob, guessAlice, guessBob)=>{
-  if(handAlice == handBob){
+  if(guessAlice == guessBob){
     return DRAW;
   } else if((handAlice+handBob) == guessAlice){
     return A_WINS;
   } else if((handAlice+handBob) == guessBob){
     return B_WINS;
   } else return DRAW; 
-}
+};
 
-//const checkSameGuess = (guessAlice, guessBob) => (guessAlice == guessBob) ? DRAW : ;
+forall(UInt, handAlice =>
+  forall(UInt, handBob =>
+    forall(UInt, guessAlice=>
+      forall(UInt, guessBob=>
+        assert(isOutcome(winner(handAlice, handBob, guessAlice, guessBob)))))));
 
-// assert(winner(ROCK, PAPER) ==B_WINS);
-// assert(winner(PAPER, ROCK) ==A_WINS);
-// assert(winner(G_ZERO, G_ZERO) ==DRAW);
-// assert(winner(G_ONE, G_ONE) ==DRAW);
-// assert(winner(G_TWO, G_TWO) ==DRAW);
-// assert(winner(G_THREE, G_THREE) ==DRAW);
-// assert(winner(G_FOUR, G_FOUR) ==DRAW);
-// assert(winner(G_FIVE, G_FIVE) ==DRAW);
-// assert(winner(G_SIX, G_SIX) ==DRAW);
-// assert(winner(G_SEVEN, G_SEVEN) ==DRAW);
-// assert(winner(G_EIGHT, G_EIGHT) ==DRAW);
-// assert(winner(G_NINE, G_NINE) ==DRAW);
-// assert(winner(G_TEN, G_TEN) ==DRAW);
+forall(UInt, handAlice =>
+  forall(UInt, handBob=>
+    forall(UInt, guess=>
+      assert(winner(handAlice, handBob, guess, guess) == DRAW))));
 
-// forall(UInt, handAlice =>
-//   forall(UInt, handBob =>
-//     assert(isOutcome(winner(handAlice, handBob)))));
-
-// forall(UInt, (hand) => 
-//   assert(winner(hand, hand) == DRAW));
 
 const Player = {
   ...hasRandom,
   getHand: Fun([], UInt),
-  getGuess: Fun([], UInt),
+  getGuess: Fun([UInt], UInt),
   seeOutcome: Fun([UInt], Null),
 
 };
@@ -64,7 +53,7 @@ export const main = Reach.App(() => {
     const [_commitAlice, _saltAlice] = makeCommitment(interact, _handAlice);
     const commitAlice = declassify(_commitAlice);
 
-    const _guessAlice = interact.getGuess();
+    const _guessAlice = interact.getGuess(_handAlice);
     const [_commitAliceGuess, _saltAliceGuess] = makeCommitment(interact, _guessAlice);
     const commitAliceGuess = declassify(_commitAliceGuess);
   });
@@ -77,7 +66,7 @@ export const main = Reach.App(() => {
   Bob.only(() => {
     interact.acceptWager(amount);
     const handBob = declassify(interact.getHand());
-    const guessBob = declassify(interact.getGuess());
+    const guessBob = declassify(interact.getGuess(handBob));
     // const handBob = (handAlice + 1) % 3;
   });
   Bob.publish(handBob, guessBob)
@@ -93,12 +82,14 @@ export const main = Reach.App(() => {
     const guessAlice = declassify(_guessAlice);
   });
   Alice.publish(saltAlice, handAlice, saltAliceGuess, guessAlice);
+
+  // guarantee that these peices of information have not been changed
   checkCommitment(commitAlice, saltAlice, handAlice);
   checkCommitment(commitAliceGuess, saltAliceGuess, guessAlice);
 
   const outcome = winner(handAlice, handBob, guessAlice, guessBob);
-  //require(handBob == (handAlice + 1) % 3);
-  //assert(outcome == 0);
+  // require(guessAlice>=handAlice);
+  // require(guessBob>=handBob);
   const            [forAlice, forBob] =
     outcome == A_WINS ? [       2,      0] :
     outcome == B_WINS ? [       0,      2] :
