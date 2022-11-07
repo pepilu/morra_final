@@ -22,6 +22,7 @@ exports.GetHand = class extends React.Component {
         <br />
         {!playable ? 'Please wait...' : ''}
         <br />
+        <h2>What will your hand be? <br/>(number of fingers)</h2>
         {buttons}
         
       </div>
@@ -46,6 +47,7 @@ exports.GetGuess = class extends React.Component {
         <br />
         {!playable ? 'Please wait...' : ''}
         <br />
+        <h2>What will you guess? <br/>(sum of all players)</h2>
         {buttons}
       </div>
     );
